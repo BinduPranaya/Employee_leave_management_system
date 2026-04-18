@@ -19,3 +19,8 @@ export async function updatePolicy(payload) {
   const { data } = await api.put("/policy", payload);
   return data;
 }
+
+export async function getLeavePredictions() {
+  const { data } = await api.post("/admin/ml/predict");
+  return data;
+}

@@ -4,6 +4,7 @@ import { getSummary } from "../api/analytics.js";
 import { getAllLeaves } from "../api/leaves.js";
 import { formatDate } from "../utils/date.js";
 import { getRegistrationMeta } from "../api/meta.js";
+import { getLeavePredictions } from "../api/admin.js";
 
 export default function AdminDashboard() {
   const [summary, setSummary] = useState(null);
@@ -15,6 +16,7 @@ export default function AdminDashboard() {
     to: "",
   });
   const [departments, setDepartments] = useState([]);
+  const [predictions, setPredictions] = useState([]);
 
   const loadLeaves = async (params = filters) => {
     const data = await getAllLeaves(params);
@@ -27,6 +29,9 @@ export default function AdminDashboard() {
     getRegistrationMeta()
       .then((meta) => setDepartments(meta.departments || []))
       .catch(() => setDepartments([]));
+    getLeavePredictions()
+      .then((data) => setPredictions(data || []))
+      .catch(console.error);
   }, []);
 
   const handleFilterChange = (event) => {
@@ -137,6 +142,66 @@ export default function AdminDashboard() {
                 <tr>
                   <td colSpan="4" className="py-6 text-center text-slate-500">
                     No leave requests found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-4">
+        <StatCard
+          label="High-Risk Employees"
+          value={predictions.filter((p) => p.prediction === 1).length}
+          tone="warn"
+        />
+        <StatCard
+          label="Low-Risk Employees"
+          value={predictions.filter((p) => p.prediction === 0).length}
+          tone="good"
+        />
+      </div>
+
+      <div className="card p-6">
+        <h3 className="text-lg font-semibold mb-4">Leave Prediction Insights</h3>
+        <div className="overflow-auto">
+          <table className="w-full text-sm">
+            <thead className="text-left text-slate-500">
+              <tr>
+                <th className="pb-3">Employee</th>
+                <th className="pb-3">Department</th>
+                <th className="pb-3">Risk Level</th>
+                <th className="pb-3">Probability (High Risk)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {predictions.map((p) => (
+                <tr key={p.userId} className="border-t border-slate-100">
+                  <td className="py-3 font-semibold">{p.name}</td>
+                  <td className="py-3 text-slate-600">{p.department || "-"}</td>
+                  <td className="py-3">
+                    <span
+                      className={`tag ${
+                        p.prediction === 1
+                          ? "bg-red-100 text-red-700"
+                          : p.prediction === 0
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-slate-100 text-slate-700"
+                      }`}
+                    >
+                      {p.risk}
+                    </span>
+                  </td>
+                  <td className="py-3 text-slate-600">
+                    {p.probability != null ? `${(p.probability * 100).toFixed(1)}%` : "-"}
+                  </td>
+                </tr>
+              ))}
+              {predictions.length === 0 && (
+                <tr>
+                  <td colSpan="4" className="py-6 text-center text-slate-500">
+                    Loading predictions... (Ensure ML API is running on port 5000)
                   </td>
                 </tr>
               )}
